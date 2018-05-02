@@ -6,6 +6,7 @@ from validate_email import validate_email
 import requests
 from countries import Countries
 from math import sin, cos, sqrt, atan2, radians
+R = 6373.0 #earth radius
 
 
 #TODO accept utf 8 code
@@ -72,15 +73,12 @@ class Hotel(Resource):
             price == None or
             name == None):
             abort(404)
-        print("check1")
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key):
             abort(403)
-        print("check2")
         for a in str(rooms).split("|"):
             if(not a.isdigit):
                 abort(404)
-        print("check3")
         if(locations.get(int(location))==None):
             abort(404)
 
@@ -99,27 +97,27 @@ class Hotel(Resource):
         return json.dumps(hotel.__dict__)
 
 
-
+    #tested
     @app.route("/hotel/list",methods=['GET'],endpoint='hotel/listGet')
     def getList():
         location = request.args.get('location')
         distance = request.args.get('distance')
         if(location == None or not location.isdigit() or
             distance == None or not distance.isdigit()):
-            return json.dumps([ob.__dict__ for ob in hotels],ensure_ascii=False)
+            return json.dumps([ob.__dict__ for key, ob in hotels.items()],ensure_ascii=False)
 
         response = []
-        loc = locations.get(location)
+        loc = locations.get(int(location))
         if(loc == None):
             abort(404)
-        for hotel in hotels:
+        for key, hotel in hotels.items():
             loc2 = locations.get(hotel.location)
-            if(getDistance(loc.lat,loc.long,loc2.lat,loc2.long) <= distance):
+            if(Location.getDistance(loc.lat,loc.long,loc2.lat,loc2.long) <= int(distance)):
                 response.append(hotel)
         return json.dumps([ob.__dict__ for ob in response])
 
 
-
+    #tested
     @app.route("/hotel",methods=['PUT'],endpoint='hotelUpdate')
     def update():
         hotel_id = request.args.get('hotel')
@@ -143,7 +141,7 @@ class Hotel(Resource):
         return json.dumps(hotel.__dict__)
 
 
-
+    #tested
     @app.route("/hotel",methods=['DELETE'],endpoint='hotelDel')
     def delete():
         hotel_id = request.args.get('hotel')
@@ -161,7 +159,8 @@ class Hotel(Resource):
         hotel = hotels.get(int(hotel_id))
         if(hotel == None):
             abort(404)
-        #TODO delete website
+        del hotels[int(hotel_id)]
+        #TODO maybe delete more or cancle if the rest isnt deleted jet
         return json.dumps(hotel.__dict__)
 
 
@@ -197,7 +196,6 @@ class Website(Resource):
     #check if hotel exsists
 
 class Location(Resource):
-    # TODO add put /delete /get
     def __init__(self, location, lat, long, country):
         self.location = location
         self.lat = lat
@@ -219,16 +217,20 @@ class Location(Resource):
                 return b
         return None
 
-    def getDistance(lat1, lon1, lat2, lon2):
+    def getDistance(la1, lo1, la2, lo2):
+        lon2 = radians(lo2)
+        lon1 = radians(lo1)
+        lat2 = radians(la2)
+        lat1 = radians(la1)
         dlon = lon2 - lon1
         dlat = lat2 - lat1
 
         a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
         c = 2 * atan2(sqrt(a), sqrt(1 - a))
-
+        print(c*R)
         return R * c
 
-
+    #tested
     @app.route("/location",methods=['POST'],endpoint='locationPost')
     def put():
         location = request.args.get('location')
@@ -249,7 +251,7 @@ class Location(Resource):
         return json.dumps(Location(location,int(lat),int(lon),countryName).__dict__)
 
 
-
+    #tested
     @app.route("/location",methods=['GET'],endpoint='locationǴet')
     def get():
         hotel_id = request.args.get('hotel')
@@ -263,7 +265,22 @@ class Location(Resource):
             abort(404)
         return json.dumps(location.__dict__)
 
+    #tested
+    @app.route("/location/list",methods=['GET'],endpoint='location/listǴet')
+    def getList():
+        return json.dumps( [location.__dict__ for key, location in locations.items()])
 
+    #tested
+    @app.route("/location",methods=['DELETE'],endpoint='locationDelete')
+    def delete():
+        location_id = request.args.get('location')
+        if(location_id == None or not location_id.isdigit()):
+            abort(404)
+        location = locations.get(int(location_id))
+        if(location==None):
+            abort(404)
+        del locations[int(location_id)]
+        return json.dumps(location.__dict__)
 
 
 if __name__ == '__main__':
