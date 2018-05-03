@@ -6,6 +6,7 @@ from validate_email import validate_email
 import requests
 from countries import Countries
 from math import sin, cos, sqrt, atan2, radians
+from random import randint
 R = 6373.0 #earth radius
 
 
@@ -37,7 +38,7 @@ class Room(Resource):
     @app.route("/room/list",methods=['GET'],endpoint='room/listGet')
     def get():
         hotel_id = request.args.get('hotel')
-        if(hotel_id == None or not hotel_id.isdigit()):
+        if(hotel_id == None or not hotel_id.isdigit() or hotels.get(int(hotel_id)) == None):
             abort(404)
         response = json.dumps([ob.__dict__ for ob in rooms[int(hotel_id)]],ensure_ascii=False)
         return response
@@ -50,7 +51,8 @@ class Hotel(Resource):
         self.name = name
         self.location = location #id of location
         for a in str(rooms).split("|"):
-            Room(int(a),self.id,price)
+            if(a.isdigit()):
+                Room(int(a),self.id,price)
         self.stars = stars
         hotels[self.id] = self
 
@@ -74,7 +76,7 @@ class Hotel(Resource):
             name == None):
             abort(404)
         curr_user = users.get(int(user))
-        if(curr_user == None or curr_user.passkey != user_key):
+        if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
             abort(403)
         for a in str(rooms).split("|"):
             if(not a.isdigit):
@@ -82,7 +84,7 @@ class Hotel(Resource):
         if(locations.get(int(location))==None):
             abort(404)
 
-        return json.dumps(Hotel(name,int(location),rooms,int(stars),price).__dict__)
+        return json.dumps(Hotel(name,int(location),rooms,float(stars),price).__dict__)
 
 
     #tested
@@ -137,7 +139,7 @@ class Hotel(Resource):
         hotel = hotels.get(int(hotel_id))
         if(hotel == None):
             abort(404)
-        hotel.stars = int(stars)
+        hotel.stars = float(stars)
         return json.dumps(hotel.__dict__)
 
 
@@ -166,7 +168,6 @@ class Hotel(Resource):
 
 
 class User(Resource):
-    # TODO add put /delete/ update /get
     def __init__(self, firstname, lastname, email, is_creator, passkey, Uid=None):
         self.firstname = firstname
         self.lastname = lastname
@@ -174,26 +175,223 @@ class User(Resource):
         self.email = email
         self.passkey = passkey
         self.is_creator = is_creator
-        if(id is None):
+        if(Uid == None):
             self.id = id(self)
         else:
             self.id = Uid
         users[self.id] = self
 
+    #tested
+    @app.route("/user",methods=['POST'],endpoint='userPost')
+    def create():
+        firstname = request.args.get('firstname')
+        lastname = request.args.get('lastname')
+        email = request.args.get('email')
+        is_creator = request.args.get('creator')
+        passkey = request.args.get('passkey')
+        user = request.args.get('user')
+        user_key = request.args.get('key')
+        if(user == None or not user.isdigit() or
+            user_key == None or
+            firstname == None or
+            lastname == None or
+            email == None or
+            passkey == None):
+            abort(404)
+
+        if(is_creator == "True" or is_creator == "1"):
+            is_creator = True
+        else:
+            is_creator = False
+
+        if(not validate_email(email)):
+            abort(404)
+
+        curr_user = users.get(int(user))
+        if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
+            abort(403)
+
+        return json.dumps(User(firstname,lastname,email,is_creator,passkey).__dict__)
+
+    #tested
+    @app.route("/user",methods=['DELETE'],endpoint='userDelete')
+    def delete():
+        user1 = request.args.get('user1')
+        user2 = request.args.get('user2')
+        user_key = request.args.get('key')
+        if(user1 == None or not user1.isdigit() or
+            user2 == None or not user2.isdigit() or
+            user_key == None):
+            abort(404)
+
+        curr_user = users.get(int(user1))
+        if(curr_user == None or curr_user.passkey != user_key or (user1 != user2 and curr_user.is_creator != True)):
+            abort(403)
+
+        user = users.get(int(user2))
+        if(user == None):
+            abort(404)
+        del users[int(user2)]
+        return json.dumps(user.__dict__)
+
+    #tested
+    @app.route("/user",methods=['PUT'],endpoint='userUpdate')
+    def update():
+        firstname = request.args.get('firstname')
+        lastname = request.args.get('lastname')
+        email = request.args.get('email')
+        is_creator = request.args.get('creator')
+        passkey = request.args.get('passkey')
+        user1 = request.args.get('user1')
+        user2 = request.args.get('user2')
+        user_key = request.args.get('key')
+        if(user1 == None or not user1.isdigit() or
+            user2 == None or not user2.isdigit() or
+            user_key == None):
+            abort(404)
+
+        if(is_creator == "True" or is_creator == "1"):
+            is_creator = True
+        elif(is_creator == "False" or is_creator == "0"):
+            is_creator = False
+
+        curr_user = users.get(int(user1))
+        user = users.get(int(user2))
+        if(curr_user == None or curr_user.passkey != user_key or user == None):
+            abort(403)
+
+        if(curr_user.is_creator):
+            if(is_creator != None):
+                user.is_creator = is_creator
+
+        if(email != None):
+            if(not validate_email(email)):
+                abort(404)
+            user.email = email
+
+        if(firstname != None):
+            user.firstname = firstname
+
+        if(lastname != None):
+            user.lastname = lastname
+
+        if(passkey != None):
+            user.passkey = passkey
+
+        return json.dumps(user.__dict__)
 
 
 class Website(Resource):
-    # TODO put/update/delete/get
     def __init__(self,hotel,url):
         self.id = id(self)
         self.url = url
         websites[hotel].append(self)
 
+    #tested
+    @app.route("/website",methods=['PUT'],endpoint='websiteUpdate')
+    def update():
+        hotel_id = request.args.get('hotel')
+        website_id = request.args.get('website')
+        url = request.args.get('url')
+        user = request.args.get('user')
+        user_key = request.args.get('key')
+        if(user == None or not user.isdigit() or
+            user_key == None or
+            hotel_id == None or not hotel_id.isdigit() or
+            website_id == None or not website_id.isdigit() or
+            url == None):
+            abort(404)
 
-    #request = requests.get('http://www.example.com') #check in put
-    #if (request.status_code != 200):
-        #not valid
-    #check if hotel exsists
+        curr_user = users.get(int(user))
+        if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
+            abort(403)
+        try:
+            req = requests.get(url)
+        except Exception as e:
+            abort(404)
+         #check in put
+        if (req.status_code != 200):
+            abort(404)
+        hotelSites = websites.get(int(hotel_id))
+        if(hotelSites == None):
+            abort(404)
+        for website in hotelSites:
+            if(website.id == int(website_id)):
+                website.url = url;
+                return json.dumps(website.__dict__)
+        abort(404)
+
+
+    #tested
+    @app.route("/website",methods=['DELETE'],endpoint='websiteDelete')
+    def update():
+        hotel_id = request.args.get('hotel')
+        website_id = request.args.get('website')
+        user = request.args.get('user')
+        user_key = request.args.get('key')
+        if(user == None or not user.isdigit() or
+            user_key == None or
+            hotel_id == None or not hotel_id.isdigit() or
+            website_id == None or not website_id.isdigit()):
+            abort(404)
+
+        curr_user = users.get(int(user))
+        if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
+            abort(403)
+
+        hotelSites = websites.get(int(hotel_id))
+        if(hotelSites == None):
+            abort(404)
+        i = 0
+        for website in hotelSites:
+            if(website.id == int(website_id)):
+                del websites[int(hotel_id)][i]
+                return json.dumps(website.__dict__)
+            i += 1
+        abort(404)
+
+
+    #tested
+    @app.route("/website",methods=['POST'],endpoint='websitePost')
+    def create():
+        hotel_id = request.args.get('hotel')
+        url = request.args.get('url')
+        user = request.args.get('user')
+        user_key = request.args.get('key')
+        if(user == None or not user.isdigit() or
+            user_key == None or
+            hotel_id == None or not hotel_id.isdigit() or
+            url == None):
+            abort(404)
+        try:
+            req = requests.get(url)
+        except Exception as e:
+            abort(404)
+         #check in put
+        if (req.status_code != 200):
+            abort(404)
+
+        curr_user = users.get(int(user))
+        if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
+            abort(403)
+
+        hotel = hotels.get(int(hotel_id))
+        if(hotel == None):
+            abort(404)
+        return json.dumps(Website(hotel.id,url).__dict__)
+
+    #tested
+    @app.route("/website/list",methods=['GET'],endpoint='website/listGet')
+    def create():
+        hotel_id = request.args.get('hotel')
+        if(hotel_id == None or not hotel_id.isdigit()):
+            abort(404)
+
+        hotelSites = websites.get(int(hotel_id))
+        if(hotelSites == None):
+            abort(404)
+        return json.dumps([ob.__dict__ for ob in hotelSites])
+
 
 class Location(Resource):
     def __init__(self, location, lat, long, country):
@@ -227,7 +425,6 @@ class Location(Resource):
 
         a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
         c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        print(c*R)
         return R * c
 
     #tested
@@ -283,8 +480,23 @@ class Location(Resource):
         return json.dumps(location.__dict__)
 
 
+def readJsonOld():
+    data = json.load(open('db.json'))
+    for hotel in data:
+        tmp1 = Location(hotel["cityName"],hotel["latitude"],hotel["longitude"],hotel["countryName"])
+        if (hotel["price"] == '' or hotel["price"]==99999):
+            price = str(randint(16, 60))+ "$"
+        else:
+            price = str(hotel["price"]) + "$"
+        tmp2 = Hotel(hotel["hotelName"],tmp1.id,hotel["facilities"],hotel["stars"],price)
+        url = hotel["url"]
+        if(len(url)>4):
+            Website(tmp2.id,url)
+
+
 if __name__ == '__main__':
     print("Admin:")
     print(User("admin","","admin@api.at",True,"root",Uid=1).id)
+    readJsonOld()
     #TODO read and save
     app.run(debug=True)
