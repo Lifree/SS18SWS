@@ -7,6 +7,7 @@ import requests
 from countries import Countries
 from math import sin, cos, sqrt, atan2, radians
 from random import randint
+from dateutil import parser as dateparse
 R = 6373.0 #earth radius
 
 
@@ -25,12 +26,20 @@ reservations = defaultdict(list) #maybe change type
 bookings = defaultdict(list) #maybe change type
 bookmarks = defaultdict(list) #maybe change type
 offers = defaultdict(list) #maybe change type
-reviews = defaultdict(list) #maybe change type
+reviews = defaultdict(list)
+
+#################################################################################################
+#################################################################################################
+#################################################################################################
+############################################## ROOM #############################################
+#################################################################################################
+#################################################################################################
 
 class Room(Resource):
     def __init__(self,number,hotel,price): #init one room
         self.number = number    #room number
         self.price = price
+        self.id = id(self)
         rooms[hotel].append(self)
 
 
@@ -44,7 +53,12 @@ class Room(Resource):
         return response
 
 
-
+#################################################################################################
+#################################################################################################
+#################################################################################################
+############################################## HOTEL ###########################################
+#################################################################################################
+#################################################################################################
 class Hotel(Resource):
     def __init__(self,name,location,rooms,stars,price):
         self.id = id(self)
@@ -133,7 +147,7 @@ class Hotel(Resource):
             abort(404)
 
         curr_user = users.get(int(user))
-        if(curr_user == None or curr_user.passkey != user_key):
+        if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
             abort(403)
 
         hotel = hotels.get(int(hotel_id))
@@ -155,18 +169,25 @@ class Hotel(Resource):
             abort(404)
 
         curr_user = users.get(int(user))
-        if(curr_user == None or curr_user.passkey != user_key):
+        if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
             abort(403)
 
         hotel = hotels.get(int(hotel_id))
         if(hotel == None):
             abort(404)
         del hotels[int(hotel_id)]
+        del rooms[int(hotel_id)]
+        del reviews[int(hotel_id)]
         #TODO maybe delete more or cancle if the rest isnt deleted jet
         return json.dumps(hotel.__dict__)
 
 
-
+#################################################################################################
+#################################################################################################
+#################################################################################################
+############################################## USER #############################################
+#################################################################################################
+#################################################################################################
 class User(Resource):
     def __init__(self, firstname, lastname, email, is_creator, passkey, Uid=None):
         self.firstname = firstname
@@ -281,6 +302,12 @@ class User(Resource):
         return json.dumps(user.__dict__)
 
 
+#################################################################################################
+#################################################################################################
+#################################################################################################
+########################################### WEBSITE #############################################
+#################################################################################################
+#################################################################################################
 class Website(Resource):
     def __init__(self,hotel,url):
         self.id = id(self)
@@ -345,7 +372,10 @@ class Website(Resource):
         i = 0
         for website in hotelSites:
             if(website.id == int(website_id)):
-                del websites[int(hotel_id)][i]
+                if(len(hotelSites)==1):
+                    del websites[int(hotel_id)]
+                else:
+                    del websites[int(hotel_id)][i]
                 return json.dumps(website.__dict__)
             i += 1
         abort(404)
@@ -393,6 +423,12 @@ class Website(Resource):
         return json.dumps([ob.__dict__ for ob in hotelSites])
 
 
+#################################################################################################
+#################################################################################################
+#################################################################################################
+########################################### LOCATION ############################################
+#################################################################################################
+#################################################################################################
 class Location(Resource):
     def __init__(self, location, lat, long, country):
         self.location = location
@@ -480,6 +516,353 @@ class Location(Resource):
         return json.dumps(location.__dict__)
 
 
+#################################################################################################
+#################################################################################################
+#################################################################################################
+###########################################  REVIEW  ############################################
+#################################################################################################
+#################################################################################################
+class Review(Resource):
+    def __init__(self, hotel, user, msg):
+        self.hotel = hotel
+        self.user = user
+        self.msg = msg
+        self.id = id(self)
+        reviews[hotel].append(self)
+
+    #tested
+    @app.route("/review",methods=['POST'],endpoint='reviewPost')
+    def put():
+        hotel_id = request.args.get('hotel')
+        msg = request.args.get('msg')
+        user = request.args.get('user')
+        user_key = request.args.get('key')
+
+        if(user == None or not user.isdigit() or
+            user_key == None or
+            hotel_id == None or not hotel_id.isdigit() or
+            msg == None):
+            abort(404)
+
+        hotel = hotels.get(int(hotel_id))
+        if(hotel == None):
+            abort(404)
+
+        curr_user = users.get(int(user))
+        if(curr_user == None or curr_user.passkey != user_key):
+            abort(403)
+        return json.dumps(Review(int(hotel_id),int(user),msg).__dict__)
+
+
+    #tested
+    @app.route("/review/list",methods=['GET'],endpoint='review/listGet')
+    def get():
+        hotel_id = request.args.get('hotel')
+        if(hotel_id == None or not hotel_id.isdigit()):
+            abort(404)
+        hotelReviews = reviews.get(int(hotel_id))
+        if(hotelReviews == None):
+            abort(404)
+        return json.dumps([ob.__dict__ for ob in hotelReviews])
+
+
+
+#################################################################################################
+#################################################################################################
+#################################################################################################
+########################################  BOOKMARKS  ############################################
+#################################################################################################
+#################################################################################################
+class Bookmark(Resource):
+    def __init__(self, hotel, user):
+        self.hotel = hotel
+        self.user = user
+        self.id = id(self)
+        bookmarks[user].append(self)
+
+    #tested
+    @app.route("/bookmark",methods=['POST'],endpoint='bookmarkPost')
+    def put():
+        hotel_id = request.args.get('hotel')
+        user = request.args.get('user')
+        user_key = request.args.get('key')
+
+        if(user == None or not user.isdigit() or
+            user_key == None or
+            hotel_id == None or not hotel_id.isdigit()):
+            abort(404)
+
+        hotel = hotels.get(int(hotel_id))
+        if(hotel == None):
+            abort(404)
+
+        curr_user = users.get(int(user))
+        if(curr_user == None or curr_user.passkey != user_key):
+            abort(403)
+        return json.dumps(Bookmark(int(hotel_id),int(user)).__dict__)
+
+
+    #tested
+    @app.route("/bookmark/list",methods=['GET'],endpoint='bookmark/listGet')
+    def get():
+        user = request.args.get('user')
+        user_key = request.args.get('key')
+        if(user == None or not user.isdigit() or
+            user_key == None):
+            abort(404)
+        curr_user = users.get(int(user))
+        if(curr_user == None or curr_user.passkey != user_key):
+            abort(403)
+        userBookmarks = bookmarks.get(int(user))
+        if(userBookmarks == None):
+            abort(404)
+        return json.dumps([ob.__dict__ for ob in userBookmarks])
+
+
+    #tested
+    @app.route("/bookmark",methods=['DELETE'],endpoint='bookmarkDelete')
+    def get():
+        user = request.args.get('user')
+        user_key = request.args.get('key')
+        bookmark_id = request.args.get('bookmark')
+        if(user == None or not user.isdigit() or
+            bookmark_id == None or not bookmark_id.isdigit() or
+            user_key == None):
+            abort(404)
+        curr_user = users.get(int(user))
+        if(curr_user == None or curr_user.passkey != user_key):
+            abort(403)
+        userBookmarks = bookmarks.get(int(user))
+        if(userBookmarks == None):
+            abort(404)
+        i = 0
+        for ob in userBookmarks:
+            if(ob.id == int(bookmark_id)):
+                if(len(userBookmarks) == 1):
+                    del bookmarks[int(user)]
+                else:
+                    del bookmarks[int(user)][i]
+                return json.dumps(ob.__dict__)
+            i += 1
+        abort(404)
+
+
+#################################################################################################
+#################################################################################################
+#################################################################################################
+#####################################  RESERVATIONS  ############################################
+#################################################################################################
+#################################################################################################
+class Reservation(Resource):
+    def __init__(self, room, user, start, end):
+        self.room = room
+        self.user = user
+        self.start_date = start
+        self.end_date = end
+        self.id = id(self)
+        reservations[room].append(self)
+
+    #tested
+    @app.route("/reservation",methods=['POST'],endpoint='reservationPOST')
+    def put():
+        hotel_id = request.args.get('hotel')
+        room_id = request.args.get('room')
+        user = request.args.get('user')
+        user_key = request.args.get('key')
+        start = request.args.get('start')
+        end = request.args.get('end')
+
+        if(user == None or not user.isdigit() or
+            user_key == None or
+            start == None or
+            end == None or
+            hotel_id == None or not hotel_id.isdigit() or
+            room_id == None or not room_id.isdigit()):
+            abort(404)
+
+        try:
+            start = dateparse.parse(start).timestamp()
+            end = dateparse.parse(end).timestamp()
+        except Exception as e:
+            abort(404)
+
+        hotelRooms = rooms.get(int(hotel_id))
+        if(hotelRooms == None):
+            abort(404)
+
+        curr_user = users.get(int(user))
+        if(curr_user == None or curr_user.passkey != user_key):
+            abort(403)
+
+        for ob in hotelRooms:
+            if(ob.id == int(room_id)):
+                roomReservations = reservations.get(int(room_id))
+                if(roomReservations == None):
+                    return json.dumps(Reservation(int(room_id),int(user),start,end).__dict__)
+                else:
+                    for res in roomReservations:
+                        if ((res.start_date <= start and res.end_date >= start) or
+                            (res.start_date <= end and res.end_date >= end)):
+                            print(res.__dict__)
+                            abort(404)
+                    return json.dumps(Reservation(int(room_id),int(user),start,end).__dict__)
+        abort(404)
+
+    #tested
+    @app.route("/reservation/list",methods=['GET'],endpoint='reservation/listGet')
+    def get():
+        room_id = request.args.get('room')
+        if(room_id == None or not room_id.isdigit()):
+            abort(404)
+        roomReservations = reservations.get(int(room_id))
+        if(roomReservations == None):
+            abort(404)
+        return json.dumps([ob.__dict__ for ob in roomReservations])
+
+
+    #tested
+    @app.route("/reservation",methods=['DELETE'],endpoint='reservationDelete')
+    def get():
+        user = request.args.get('user')
+        user_key = request.args.get('key')
+        room_id = request.args.get('room')
+        res_id = request.args.get('reservation')
+        if(user == None or not user.isdigit() or
+            room_id == None or not room_id.isdigit() or
+            res_id == None or not res_id.isdigit() or
+            user_key == None):
+            abort(404)
+        curr_user = users.get(int(user))
+        if(curr_user == None or curr_user.passkey != user_key):
+            abort(403)
+        roomReservations = reservations.get(int(room_id))
+        if(roomReservations == None):
+            abort(404)
+        i = 0
+        for ob in roomReservations:
+            if(ob.id == int(res_id)):
+                if(ob.user != int(user) and curr_user.is_creator != True):
+                    abort(403)
+                if(len(roomReservations) == 1):
+                    del reservations[int(room_id)]
+                else:
+                    del reservations[int(room_id)][i]
+                return json.dumps(ob.__dict__)
+            i += 1
+        abort(404)
+
+
+#################################################################################################
+#################################################################################################
+#################################################################################################
+#####################################     BOOKING    ############################################
+#################################################################################################
+#################################################################################################
+class Booking(Resource):
+    def __init__(self, room, user, start, end):
+        self.room = room
+        self.user = user
+        self.start_date = start
+        self.end_date = end
+        self.id = id(self)
+        bookings[user].append(self)
+
+    #tested
+    @app.route("/booking",methods=['POST'],endpoint='bookingPOST')
+    def put():
+        hotel_id = request.args.get('hotel')
+        room_id = request.args.get('room')
+        user = request.args.get('user')
+        user_key = request.args.get('key')
+        start = request.args.get('start')
+        end = request.args.get('end')
+
+        if(user == None or not user.isdigit() or
+            user_key == None or
+            start == None or
+            end == None or
+            hotel_id == None or not hotel_id.isdigit() or
+            room_id == None or not room_id.isdigit()):
+            abort(404)
+
+        try:
+            start = dateparse.parse(start).timestamp()
+            end = dateparse.parse(end).timestamp()
+        except Exception as e:
+            abort(404)
+
+        hotelRooms = rooms.get(int(hotel_id))
+        if(hotelRooms == None):
+            abort(404)
+
+        curr_user = users.get(int(user))
+        if(curr_user == None or curr_user.passkey != user_key):
+            abort(403)
+
+        for ob in hotelRooms:
+            if(ob.id == int(room_id)):
+                roomReservations = reservations.get(int(room_id))
+                if(roomReservations == None):
+                    Reservation(int(room_id),int(user),start,end)
+                    return json.dumps(Booking(int(room_id),int(user),start,end).__dict__)
+                else:
+                    for res in roomReservations:
+                        if ((res.start_date <= start and res.end_date >= start) or
+                            (res.start_date <= end and res.end_date >= end)):
+                            print(res.__dict__)
+                            abort(404)
+                    Reservation(int(room_id),int(user),start,end)
+                    return json.dumps(Booking(int(room_id),int(user),start,end).__dict__)
+        abort(404)
+
+    #tested
+    @app.route("/booking/list",methods=['GET'],endpoint='booking/listGet')
+    def get():
+        user = request.args.get('user')
+        if(user == None or not user.isdigit()):
+            abort(404)
+        userBookings = bookings.get(int(user))
+        if(userBookings == None):
+            abort(404)
+        return json.dumps([ob.__dict__ for ob in userBookings])
+
+
+    #tested
+    @app.route("/booking",methods=['DELETE'],endpoint='bookingDelete')
+    def get():
+        user1 = request.args.get('booker')
+        user2 = request.args.get('user')
+        user_key = request.args.get('key')
+        booking_id = request.args.get('booking')
+        if(user2 == None or not user2.isdigit() or
+            user1 == None or not user1.isdigit() or
+            booking_id == None or not booking_id.isdigit() or
+            user_key == None):
+            abort(404)
+        curr_user = users.get(int(user2))
+        if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
+            abort(403)
+        userBookings = bookings.get(int(user1))
+        if(userBookings == None):
+            abort(404)
+        i = 0
+        for ob in userBookings:
+            if(ob.id == int(booking_id)):
+                if(len(userBookings) == 1):
+                    del bookings[int(user1)]
+                else:
+                    del bookings[int(user1)][i]
+                return json.dumps(ob.__dict__)
+            i += 1
+        abort(404)
+
+
+#################################################################################################
+#################################################################################################
+#################################################################################################
+############################################## MAIN #############################################
+#################################################################################################
+#################################################################################################
 def readJsonOld():
     data = json.load(open('db.json'))
     for hotel in data:
