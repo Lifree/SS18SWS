@@ -8,6 +8,7 @@ from countries import Countries
 from math import sin, cos, sqrt, atan2, radians
 from random import randint
 from dateutil import parser as dateparse
+from datetime import date, datetime
 R = 6373.0 #earth radius
 
 
@@ -22,10 +23,9 @@ hotels = {}
 users = {}
 websites = defaultdict(list)
 locations = {}
-reservations = defaultdict(list) #maybe change type
-bookings = defaultdict(list) #maybe change type
-bookmarks = defaultdict(list) #maybe change type
-offers = defaultdict(list) #maybe change type
+reservations = defaultdict(list)
+bookings = defaultdict(list)
+bookmarks = defaultdict(list)
 reviews = defaultdict(list)
 
 #################################################################################################
@@ -35,22 +35,25 @@ reviews = defaultdict(list)
 #################################################################################################
 #################################################################################################
 
+#Room is created by the creation of an hotel
 class Room(Resource):
     def __init__(self,number,hotel,price): #init one room
         self.number = number    #room number
-        self.price = price
-        self.id = id(self)
-        rooms[hotel].append(self)
+        self.price = price      #price for one night incl concurrency symbol ($,€...)
+        self.id = id(self)      #unique id of room
+        rooms[hotel].append(self)  #append to dictory list
 
 
-    #tested
+    #returns list of all rooms or filtered version with rooms of a hotel
     @app.route("/room/list",methods=['GET'],endpoint='room/listGet')
     def get():
         hotel_id = request.args.get('hotel')
-        if(hotel_id == None or not hotel_id.isdigit() or hotels.get(int(hotel_id)) == None):
-            abort(404)
-        response = json.dumps([ob.__dict__ for ob in rooms[int(hotel_id)]],ensure_ascii=False)
-        return response
+        if(hotel_id == None or not hotel_id.isdigit()):         #checks if parameter hotel was given and of correct type
+            return json.dumps([[ob.__dict__ for ob in rooms[x]] for x in rooms],ensure_ascii=False) ,200, {'ContentType':'application/json'} #if not -> return all rooms
+        if(hotels.get(int(hotel_id)) == None):                  #if hotel was given but it has no rooms
+            return abort(404)
+        response = json.dumps([ob.__dict__ for ob in rooms[int(hotel_id)]],ensure_ascii=False) #return rooms of one hotel
+        return response ,200, {'ContentType':'application/json'}
 
 
 #################################################################################################
@@ -855,6 +858,55 @@ class Booking(Resource):
                 return json.dumps(ob.__dict__)
             i += 1
         abort(404)
+
+#################################################################################################
+#################################################################################################
+#################################################################################################
+#####################################      OFFER     ############################################
+#################################################################################################
+#################################################################################################
+class Offer(Resource):
+    def __init__(self, room, hotel, start, end, price):
+        self.room = room
+        self.start_date = start
+        self.end_date = end
+        self.hotel = hotel
+        self.id = id(self)
+        delta = datetime.fromtimestamp(int(end)) - datetime.fromtimestamp(int(start))
+        if(price[:-1].isdigit()):
+            self.price = delta.days * int(price[:-1])
+        else:
+            self.price = "price not found in db"
+        self.created = datetime.now().timestamp()
+
+    #tested
+    @app.route("/offer",methods=['GET'],endpoint='offerGet')
+    def get():
+        hotel_id = request.args.get('hotel')
+        room_id = request.args.get('room')
+        start = request.args.get('start')
+        end = request.args.get('end')
+        if(hotel_id == None or not hotel_id.isdigit() or
+            room_id == None or not room_id.isdigit()):
+            abort(404)
+
+        try:
+            start = dateparse.parse(start).timestamp()
+            end = dateparse.parse(end).timestamp()
+        except Exception as e:
+            abort(404)
+
+        hotelRooms = rooms.get(int(hotel_id))
+        if(hotelRooms == None):
+            abort(404)
+        for ob in hotelRooms:
+            if(int(room_id) == ob.id):
+                return json.dumps(Offer(room_id, hotel_id, start, end, ob.price).__dict__)
+        abort(404)
+
+
+
+
 
 
 #################################################################################################
