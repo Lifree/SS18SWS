@@ -11,6 +11,8 @@ from dateutil import parser as dateparse
 from datetime import date, datetime
 R = 6373.0 #earth radius
 
+host = 'http://127.0.0.1:5000/'
+
 
 #TODO accept utf 8 code
 
@@ -46,7 +48,7 @@ class Room(Resource):
 
 
     #returns list of all rooms or filtered version with rooms of a hotel
-    @app.route("/room/list",methods=['GET'],endpoint='room/listGet')
+    @app.route("/rooms",methods=['GET'],endpoint='room/listGet')
     def get():
         hotel_id = request.args.get('hotel')
         if(hotel_id == None or not hotel_id.isdigit()):         #checks if parameter hotel was given and of correct type
@@ -74,6 +76,9 @@ class Hotel(Resource):
             if(a.isdigit()):
                 Room(int(a),self.id,price)  # create rooms
         self.stars = stars  #stars of the hotel (can be updated)
+        self.links = defaultdict(list)
+        self.links['rooms'] = host + 'rooms?hotel=' + str(self.id)
+        self.links['reviews'] = host + 'reviews?hotel=' + str(self.id)
         hotels[self.id] = self #save hotel into dictionary
 
     #create a new hotel
@@ -136,10 +141,11 @@ class Hotel(Resource):
 
 
     #get all hotels or just hotels in a radius
-    @app.route("/hotel/list",methods=['GET'],endpoint='hotel/listGet')
+    @app.route("/hotels",methods=['GET'],endpoint='hotel/listGet')
     def getList():
         location = request.args.get('location')
         distance = request.args.get('distance')
+        print([ob.__dict__ for key, ob in hotels.items()]);
         #check argumnets
         if(location == None or not location.isdigit() or
             distance == None or not distance.isdigit()):
@@ -159,6 +165,7 @@ class Hotel(Resource):
                 response.append(hotel)
         if(len(response) == 0):
             abort(404)
+
         return json.dumps([ob.__dict__ for ob in response]), 200,{'ContentType':'application/json'}
 
 
@@ -499,7 +506,7 @@ class Website(Resource):
         return json.dumps(Website(hotel.id,url).__dict__), 201,{'ContentType':'application/json'}
 
     #get list of websites (of a hotel)
-    @app.route("/website/list",methods=['GET'],endpoint='website/listGet')
+    @app.route("/websites",methods=['GET'],endpoint='website/listGet')
     def create():
         hotel_id = request.args.get('hotel')
         if(hotel_id == None or not hotel_id.isdigit()):
@@ -591,7 +598,7 @@ class Location(Resource):
         return json.dumps(location.__dict__), 200,{'ContentType':'application/json'}
 
     #return all locations
-    @app.route("/location/list",methods=['GET'],endpoint='location/listǴet')
+    @app.route("/locations",methods=['GET'],endpoint='location/listǴet')
     def getList():
         return json.dumps( [location.__dict__ for key, location in locations.items()]), 200,{'ContentType':'application/json'}
 
@@ -652,7 +659,7 @@ class Review(Resource):
 
 
     #get reviews (by hotel_id)
-    @app.route("/review/list",methods=['GET'],endpoint='review/listGet')
+    @app.route("/reviews",methods=['GET'],endpoint='review/listGet')
     def get():
         hotel_id = request.args.get('hotel')
         if(hotel_id == None or not hotel_id.isdigit()):
@@ -703,7 +710,7 @@ class Bookmark(Resource):
 
 
     # return the bookmarks of an user
-    @app.route("/bookmark/list",methods=['GET'],endpoint='bookmark/listGet')
+    @app.route("/bookmarks",methods=['GET'],endpoint='bookmark/listGet')
     def get():
         user = request.args.get('user')
         user_key = request.args.get('key')
@@ -812,7 +819,7 @@ class Reservation(Resource):
         abort(404)
 
     #get reservations (of a room)
-    @app.route("/reservation/list",methods=['GET'],endpoint='reservation/listGet')
+    @app.route("/reservations",methods=['GET'],endpoint='reservation/listGet')
     def get():
         room_id = request.args.get('room')
         if(room_id == None or not room_id.isdigit()):
@@ -926,7 +933,7 @@ class Booking(Resource):
         abort(404)
 
     #get bookings (of user)
-    @app.route("/booking/list",methods=['GET'],endpoint='booking/listGet')
+    @app.route("/bookings",methods=['GET'],endpoint='booking/listGet')
     def get():
         user = request.args.get('user')
         if(user == None or not user.isdigit()):
