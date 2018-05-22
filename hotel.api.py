@@ -64,7 +64,7 @@ class Room(Resource):
 #################################################################################################
 ############################################## HOTEL ############################################
 #################################################################################################
-#################################################################################################
+###################################################################https://github.com/Lifree/SS18SWS.git##############################
 
 #Hotels can just be created by an creator
 class Hotel(Resource):
@@ -387,6 +387,9 @@ class Website(Resource):
         self.id = id(self)
         self.url = url #url of the hotel website
         self.hotel = hotel #id of hotel
+        self.links = defaultdict(list)
+        self.links['hotel'] = host + 'hotel?hotel=' + str(self.hotel)
+        self.links['hotelWebsites'] = host + 'websites?hotel=' + str(self.hotel)
         websites[hotel].append(self) #append to list of websites of one hotel
 
     #change website of hotel
@@ -629,6 +632,9 @@ class Review(Resource):
         self.user = user    #reviewer
         self.msg = msg      #review
         self.id = id(self)  #id
+        self.links = defaultdict(list)
+        self.links['hotelReviews'] = host + 'reviews?hotel=' + str(self.hotel)
+        self.links['reviewHotel'] = host + 'hotel?hotel=' + str(self.hotel)
         reviews[hotel].append(self)
 
     #create review
@@ -680,10 +686,12 @@ class Review(Resource):
 
 # Userbookmark for hotels
 class Bookmark(Resource):
-    def __init__(self, hotel, user):
+    def __init__(self, hotel, user, key):
         self.hotel = hotel      #id of hotel
         self.user = user        #user id
         self.id = id(self)      #bookmark id
+        self.links = defaultdict(list)
+        self.links['userBookmarks'] = host + 'bookmarks?user=' + str(self.user) + '&key=' + key
         bookmarks[user].append(self)
 
     #create bookmark
@@ -706,7 +714,7 @@ class Bookmark(Resource):
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key):
             abort(403)
-        return json.dumps(Bookmark(int(hotel_id),int(user)).__dict__), 201,{'ContentType':'application/json'}
+        return json.dumps(Bookmark(int(hotel_id),int(user), key).__dict__), 201,{'ContentType':'application/json'}
 
 
     # return the bookmarks of an user
@@ -769,6 +777,8 @@ class Reservation(Resource):
         self.user = user    #reservator
         self.start_date = start  #start timestamp
         self.end_date = end #end timestamp
+        self.links = defaultdict(list)
+        self.links['roomReservations'] = host + 'reservations?room=' + str(self.room)
         self.id = id(self) #reservation id
         reservations[room].append(self)
 
