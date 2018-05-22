@@ -45,6 +45,8 @@ class Room(Resource):
         self.price = price      #price for one night incl concurrency symbol ($,€...)
         self.id = id(self)      #unique id of room
         rooms[hotel].append(self)  #append to dictory list
+        self.links = defaultdict(list)
+        self.links['hotel'] = host + 'hotel?hotel=' + str(hotel)
 
 
     #returns list of all rooms or filtered version with rooms of a hotel
@@ -79,6 +81,10 @@ class Hotel(Resource):
         self.links = defaultdict(list)
         self.links['rooms'] = host + 'rooms?hotel=' + str(self.id)
         self.links['reviews'] = host + 'reviews?hotel=' + str(self.id)
+        self.links['reservations'] = host + 'reservations?hotel=' + str(self.id)
+        self.links['websites'] = host + 'websites?hotel=' + str(self.id)
+        self.links['hotel'] = host + 'hotel?hotel=' + str(self.id)
+        self.links['location'] = host + 'location?hotel=' + str(self.id)
         hotels[self.id] = self #save hotel into dictionary
 
     #create a new hotel
@@ -251,10 +257,14 @@ class User(Resource):
         self.email = email
         self.passkey = passkey  #cleartext auth-key
         self.is_creator = is_creator #if true the user can do more things
+
         if(Uid == None):
             self.id = id(self)
         else:
             self.id = Uid  #This is just needed for the admin ;)
+        self.links = defaultdict(list)
+        self.links['bookmarks'] = host + 'bookmarks?user=' + str(self.id) + '&key=' + self.passkey
+        self.links['bookings'] = host + 'bookings?user=' + str(self.id) + '&key=' + self.passkey
         users[self.id] = self
 
     #create an new user
@@ -536,6 +546,8 @@ class Location(Resource):
         self.long = long            # longitude
         self.country = country      # country as fullname
         self.id = id(self)          # id of location
+        self.links = defaultdict(list)
+        self.links['hotels'] = host + 'hotels?location=' + str(self.id) + '&distance=0'
         locations[self.id] = self
 
     # get Shortcut of country... AUT for Austria
