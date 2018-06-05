@@ -9,6 +9,7 @@ from math import sin, cos, sqrt, atan2, radians
 from random import randint
 from dateutil import parser as dateparse
 from datetime import date, datetime
+import itertools
 R = 6373.0 #earth radius
 
 host = 'http://127.0.0.1:5000/'
@@ -40,10 +41,11 @@ reviews = defaultdict(list)
 
 #Room is created by the creation of an hotel
 class Room(Resource):
+    newid = itertools.count().__next__
     def __init__(self,number,hotel,price): #init one room
         self.number = number    #room number
         self.price = price      #price for one night incl concurrency symbol ($,€...)
-        self.id = id(self)      #unique id of room
+        self.id = Room.newid()      #unique id of room
         rooms[hotel].append(self)  #append to dictory list
         self.links = defaultdict(list)
         self.links['hotel'] = host + 'hotel?hotel=' + str(hotel)
@@ -54,11 +56,34 @@ class Room(Resource):
     def get():
         hotel_id = request.args.get('hotel')
         if(hotel_id == None or not hotel_id.isdigit()):         #checks if parameter hotel was given and of correct type
-            return json.dumps([[ob.__dict__ for ob in rooms[x]] for x in rooms],ensure_ascii=False) ,200, {'ContentType':'application/json'} #if not -> return all rooms
+            return json.dumps([[ob.dict() for ob in rooms[x]] for x in rooms],ensure_ascii=False) ,200, {'ContentType':'application/json'} #if not -> return all rooms
         if(hotels.get(int(hotel_id)) == None):                  #if hotel was given but it has no rooms
             abort(404)
-        response = json.dumps([ob.__dict__ for ob in rooms[int(hotel_id)]],ensure_ascii=False) #return rooms of one hotel
+        response = json.dumps([ob.dict() for ob in rooms[int(hotel_id)]],ensure_ascii=False) #return rooms of one hotel
         return response ,200, {'ContentType':'application/json'}
+
+    def dict(self):
+        dict = {};
+        dict["@context"] = "http://schema.org"
+        dict["@type"] = "HotelRoom"
+        dict["name"] = self.number;
+
+        additionalProperty = {}
+        additionalProperty["@type"] = "PropertyValue"
+        additionalProperty["name"] = "price"
+        additionalProperty["value"] = self.price
+        dict["additionalProperty"] = additionalProperty
+
+        potentialAction = {}
+        potentialAction["@type"] = "SearchAction"
+        potentialAction["name"] = "hotel"
+        potentialAction["query"] = self.links['hotel']
+        dict["potentialAction"] = potentialAction
+
+
+
+        return dict
+
 
 
 #################################################################################################
@@ -70,8 +95,9 @@ class Room(Resource):
 
 #Hotels can just be created by an creator
 class Hotel(Resource):
+    newid = itertools.count().__next__
     def __init__(self,name,location,rooms,stars,price):
-        self.id = id(self)      #unique id of hotel
+        self.id = Hotel.newid()      #unique id of hotel
         self.name = name        #name of the hotel
         self.location = location #id of location
         for a in str(rooms).split("|"):
@@ -101,7 +127,7 @@ class Hotel(Resource):
         #check authentication
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
 
         #check arguments
         if (location == None or not location.isdigit() or
@@ -114,7 +140,7 @@ class Hotel(Resource):
 
         #check if "login" is right + have the rights
         if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
-            abort(403)
+            return 'pass doesnt match or no rights', 403
 
         #check type of room
         if(len(rooms)<3):
@@ -142,7 +168,7 @@ class Hotel(Resource):
         hotel = hotels.get(int(hotel_id))
         #check if hotel exsists
         if(hotel == None):
-            abort(404)
+            return "no hotel found", 404
         return json.dumps(hotel.__dict__), 200 ,{'ContentType':'application/json'}
 
 
@@ -151,7 +177,6 @@ class Hotel(Resource):
     def getList():
         location = request.args.get('location')
         distance = request.args.get('distance')
-        print([ob.__dict__ for key, ob in hotels.items()]);
         #check argumnets
         if(location == None or not location.isdigit() or
             distance == None or not distance.isdigit()):
@@ -186,7 +211,7 @@ class Hotel(Resource):
         #check authentication
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
 
         #check arguments
         if(hotel_id == None or not hotel_id.isdigit() or
@@ -196,7 +221,7 @@ class Hotel(Resource):
         #get current user and check if he is creator
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
-            abort(403)
+            'pass doesnt match or no rights', 403
 
         #get hotel and update stars if the hotel exsists
         hotel = hotels.get(int(hotel_id))
@@ -216,7 +241,7 @@ class Hotel(Resource):
         #check authentication
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
 
         #check arguments
         if (hotel_id == None or not hotel_id.isdigit()):
@@ -225,7 +250,7 @@ class Hotel(Resource):
         #check curr user + if he is creator
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
-            abort(403)
+            'pass doesnt match or no rights', 403
 
         #delete hotel, rooms, reservations and review
         hotel = hotels.get(int(hotel_id))
@@ -251,17 +276,14 @@ class Hotel(Resource):
 
 # User of our API
 class User(Resource):
-    def __init__(self, firstname, lastname, email, is_creator, passkey, Uid=None):
+    newid = itertools.count().__next__
+    def __init__(self, firstname, lastname, email, is_creator, passkey):
         self.firstname = firstname
         self.lastname = lastname
         self.email = email
         self.passkey = passkey  #cleartext auth-key
         self.is_creator = is_creator #if true the user can do more things
-
-        if(Uid == None):
-            self.id = id(self)
-        else:
-            self.id = Uid  #This is just needed for the admin ;)
+        self.id = User.newid()
         self.links = defaultdict(list)
         self.links['bookmarks'] = host + 'bookmarks?user=' + str(self.id) + '&key=' + self.passkey
         self.links['bookings'] = host + 'bookings?user=' + str(self.id) + '&key=' + self.passkey
@@ -281,7 +303,7 @@ class User(Resource):
         #check authentication
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
         #check args
         if (firstname == None or
             lastname == None or
@@ -300,7 +322,7 @@ class User(Resource):
 
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
-            abort(403)
+            'pass doesnt match or no rights', 403
 
         return json.dumps(User(firstname,lastname,email,is_creator,passkey).__dict__), 201 ,{'ContentType':'application/json'}
 
@@ -314,7 +336,7 @@ class User(Resource):
         #check authentication
         if(user1 == None or not user1.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
 
         #check args
         if(user2 == None or not user2.isdigit()):
@@ -323,7 +345,7 @@ class User(Resource):
         #check rights
         curr_user = users.get(int(user1))
         if(curr_user == None or curr_user.passkey != user_key or (user1 != user2 and curr_user.is_creator != True)):
-            abort(403)
+            'pass doesnt match or no rights', 403
 
         #delete user
         user = users.get(int(user2))
@@ -346,7 +368,7 @@ class User(Resource):
         #check authentication
         if(user1 == None or not user1.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
 
         #check args
         if(user2 == None or not user2.isdigit()):
@@ -360,7 +382,7 @@ class User(Resource):
         curr_user = users.get(int(user1))
         user = users.get(int(user2))
         if(curr_user == None or curr_user.passkey != user_key or user == None):
-            abort(403)
+            'pass doesnt match or no rights', 403
 
         #update section
         if(email != None):
@@ -393,8 +415,9 @@ class User(Resource):
 
 # website of a hotel
 class Website(Resource):
+    newid = itertools.count().__next__
     def __init__(self,hotel,url):
-        self.id = id(self)
+        self.id = Website.newid()
         self.url = url #url of the hotel website
         self.hotel = hotel #id of hotel
         self.links = defaultdict(list)
@@ -414,7 +437,7 @@ class Website(Resource):
         #check authentication
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
 
         #check args
         if( hotel_id == None or not hotel_id.isdigit() or
@@ -425,7 +448,7 @@ class Website(Resource):
         #check user rights
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
-            abort(403)
+            'pass doesnt match or no rights', 403
 
         #check website
         try:
@@ -456,7 +479,7 @@ class Website(Resource):
         #check authentication
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
 
         #check args
         if( hotel_id == None or not hotel_id.isdigit() or
@@ -467,7 +490,7 @@ class Website(Resource):
         #check user rights
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
-            abort(403)
+            'pass doesnt match or no rights', 403
 
         hotelSites = websites.get(int(hotel_id))
         if(hotelSites == None):
@@ -494,7 +517,7 @@ class Website(Resource):
         #check authentication
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
 
         #check args
         if( hotel_id == None or not hotel_id.isdigit() or
@@ -505,7 +528,7 @@ class Website(Resource):
         #check user rights
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
-            abort(403)
+            'pass doesnt match or no rights', 403
 
         #check website
         try:
@@ -540,12 +563,13 @@ class Website(Resource):
 
 # Location
 class Location(Resource):
+    newid = itertools.count().__next__
     def __init__(self, location, lat, long, country):
         self.location = location    # name of the location
         self.lat = lat              # latitude
         self.long = long            # longitude
         self.country = country      # country as fullname
-        self.id = id(self)          # id of location
+        self.id = Location.newid()         # id of location
         self.links = defaultdict(list)
         self.links['hotels'] = host + 'hotels?location=' + str(self.id) + '&distance=0'
         locations[self.id] = self
@@ -639,11 +663,12 @@ class Location(Resource):
 
 # Reviews of Hotels - Can not be updated or deleted
 class Review(Resource):
+    newid = itertools.count().__next__
     def __init__(self, hotel, user, msg):
         self.hotel = hotel  #reviewed hotel
         self.user = user    #reviewer
         self.msg = msg      #review
-        self.id = id(self)  #id
+        self.id = Review.newid()  #id
         self.links = defaultdict(list)
         self.links['hotelReviews'] = host + 'reviews?hotel=' + str(self.hotel)
         self.links['reviewHotel'] = host + 'hotel?hotel=' + str(self.hotel)
@@ -659,7 +684,7 @@ class Review(Resource):
 
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
 
         if (hotel_id == None or not hotel_id.isdigit() or
             msg == None):
@@ -671,7 +696,7 @@ class Review(Resource):
 
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key):
-            abort(403)
+            'pass doesnt match or no rights', 403
 
         return json.dumps(Review(int(hotel_id),int(user),msg).__dict__),201,{'ContentType':'application/json'}
 
@@ -698,10 +723,11 @@ class Review(Resource):
 
 # Userbookmark for hotels
 class Bookmark(Resource):
+    newid = itertools.count().__next__
     def __init__(self, hotel, user, key):
         self.hotel = hotel      #id of hotel
         self.user = user        #user id
-        self.id = id(self)      #bookmark id
+        self.id = Bookmark.newid()      #bookmark id
         self.links = defaultdict(list)
         self.links['userBookmarks'] = host + 'bookmarks?user=' + str(self.user) + '&key=' + key
         bookmarks[user].append(self)
@@ -715,7 +741,7 @@ class Bookmark(Resource):
 
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
         if(hotel_id == None or not hotel_id.isdigit()):
             return "invalide hotel id", 400
 
@@ -725,7 +751,7 @@ class Bookmark(Resource):
 
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key):
-            abort(403)
+            'pass doesnt match or no rights', 403
         return json.dumps(Bookmark(int(hotel_id),int(user), key).__dict__), 201,{'ContentType':'application/json'}
 
 
@@ -736,10 +762,10 @@ class Bookmark(Resource):
         user_key = request.args.get('key')
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key):
-            abort(403)
+            'pass doesnt match or no rights', 403
         userBookmarks = bookmarks.get(int(user))
         if(userBookmarks == None):
             abort(404)
@@ -754,14 +780,14 @@ class Bookmark(Resource):
         bookmark_id = request.args.get('bookmark')
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
 
         if(bookmark_id == None or not bookmark_id.isdigit()):
             return "bookmarkid is invalide", 400
 
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key):
-            abort(403)
+            'pass doesnt match or no rights', 403
         userBookmarks = bookmarks.get(int(user))
         if(userBookmarks == None):
             return "user has no bookmarks", 400
@@ -784,6 +810,7 @@ class Bookmark(Resource):
 #################################################################################################
 #################################################################################################
 class Reservation(Resource):
+    newid = itertools.count().__next__
     def __init__(self, room, user, start, end):
         self.room = room    #room id
         self.user = user    #reservator
@@ -791,7 +818,7 @@ class Reservation(Resource):
         self.end_date = end #end timestamp
         self.links = defaultdict(list)
         self.links['roomReservations'] = host + 'reservations?room=' + str(self.room)
-        self.id = id(self) #reservation id
+        self.id = Reservation.newid() #reservation id
         reservations[room].append(self)
 
     #create reservation
@@ -806,7 +833,7 @@ class Reservation(Resource):
 
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
         if( start == None or
             end == None or
             hotel_id == None or not hotel_id.isdigit() or
@@ -825,7 +852,7 @@ class Reservation(Resource):
 
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key):
-            abort(403)
+            'pass doesnt match or no rights', 403
 
         for ob in hotelRooms:
             if(ob.id == int(room_id)):
@@ -861,7 +888,7 @@ class Reservation(Resource):
         res_id = request.args.get('reservation')
         if(user == None or not user.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
 
         if(room_id == None or not room_id.isdigit() or
             res_id == None or not res_id.isdigit()):
@@ -869,7 +896,7 @@ class Reservation(Resource):
 
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key):
-            abort(403)
+            'pass doesnt match or no rights', 403
         roomReservations = reservations.get(int(room_id))
         if(roomReservations == None):
             return "no reservations for the room found", 400
@@ -877,7 +904,7 @@ class Reservation(Resource):
         for ob in roomReservations:
             if(ob.id == int(res_id)):
                 if(ob.user != int(user) and curr_user.is_creator != True):
-                    abort(403)
+                    'pass doesnt match or no rights', 403
                 if(len(roomReservations) == 1):
                     del reservations[int(room_id)]
                 else:
@@ -895,13 +922,14 @@ class Reservation(Resource):
 #################################################################################################
 
 #booking a room
+#newid = itertools.count().__next__
 class Booking(Resource):
     def __init__(self, room, user, start, end):
         self.room = room    #room id
         self.user = user    #booker
         self.start_date = start     #start timestamp
         self.end_date = end         #end timestamp
-        self.id = id(self)          #id of booking
+        self.id = Booking.newid()          #id of booking
         bookings[user].append(self) #append it to the bookings of a user
 
     #create a booking
@@ -916,7 +944,7 @@ class Booking(Resource):
 
         if(user == None or not user.isdigit() or
             user_key == None):
-                abort(401)
+                return 'you have to auth', 401
 
         if( start == None or
             end == None or
@@ -936,7 +964,7 @@ class Booking(Resource):
 
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key):
-            abort(403)
+            'pass doesnt match or no rights', 403
 
         for ob in hotelRooms:
             if(ob.id == int(room_id)):
@@ -978,10 +1006,10 @@ class Booking(Resource):
             return "booker or booking id is invalide", 400
         if(user2 == None or not user2.isdigit() or
             user_key == None):
-            abort(401)
+            return 'you have to auth', 401
         curr_user = users.get(int(user2))
         if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
-            abort(403)
+            'pass doesnt match or no rights', 403
         userBookings = bookings.get(int(user1))
         if(userBookings == None):
             return "user has no bookings", 400
@@ -1003,12 +1031,13 @@ class Booking(Resource):
 #################################################################################################
 #################################################################################################
 class Offer(Resource):
+    newid = itertools.count().__next__
     def __init__(self, room, hotel, start, end, price):
         self.room = room
         self.start_date = start
         self.end_date = end
         self.hotel = hotel
-        self.id = id(self)
+        self.id = Offer.newid()
         delta = datetime.fromtimestamp(int(end)) - datetime.fromtimestamp(int(start))
         if(price[:-1].isdigit()):
             self.price = delta.days * int(price[:-1])
@@ -1071,7 +1100,7 @@ def readJsonOld():
 
 if __name__ == '__main__':
     print("Admin:")
-    print(User("admin","","admin@api.at",True,"root",Uid=1).id)
+    print(User("admin","","admin@api.at",True,"root").id)
     readJsonOld()
     #TODO read and save
     app.run(debug=True)
