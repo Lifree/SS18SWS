@@ -141,7 +141,7 @@ class Room(Resource):
         return response ,200, {'ContentType':'application/json'}
 
     def dict(self):
-        dict = {};
+        dict = defaultdict(list);
         dict["@context"] = "http://schema.org"
         dict["@type"] = "HotelRoom"
         dict["name"] = self.number;
