@@ -152,11 +152,12 @@ class Room(Resource):
         additionalProperty["value"] = self.price
         dict["additionalProperty"] = additionalProperty
 
-        potentialAction = {}
-        potentialAction["@type"] = "SearchAction"
-        potentialAction["name"] = "hotel"
-        potentialAction["query"] = self.links['hotel']
-        dict["potentialAction"] = potentialAction
+        getHotel = {}
+
+        getHotel["@type"] = "SearchAction"
+        getHotel["name"] = "hotel"
+        getHotel["query"] = self.links['hotel']
+        dict["potentialAction"].append(getHotel)
 
         return dict
 
