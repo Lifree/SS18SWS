@@ -39,6 +39,84 @@ reviews = defaultdict(list)
 #################################################################################################
 #################################################################################################
 
+@app.route("/",methods=['GET'],endpoint='')
+def get():
+    response = {}
+    response["@context"] = "http://schema.org"
+    response["@type"] = "WebAPI"
+    response["documentation"] = defaultdict(list)
+    response["documentation"]["@type"] = "CreativeWork"
+
+    #Resource
+    room = defaultdict(list)
+    room["@type"] = "CreativeWork"
+    room["name"] = "room"
+
+    #Resource Actions
+    getRooms = defaultdict(list)
+    getRooms["@type"] = "SearchAction"
+    getRooms["target"] = host + "rooms?hotel={hotelid}"
+    getRooms["url-input"].append("name=hotel")
+
+    #Add action to resouce
+    room["potentialAction"].append(getRooms)
+
+        #Resource
+    hotel = defaultdict(list)
+    hotel["@type"] = "CreativeWork"
+    hotel["name"] = "hotel"
+
+    #Resource Actions
+    postHotel = defaultdict(list)
+    postHotel["@type"] = "CreateAction"
+    postHotel["target"] = host + "hotel?user={userId}&key={keyString}&location={locationId}&rooms={roomsString}&stars={starsNumber}&price={priceString}&name={nameString}"
+    postHotel["url-input"].append("required name=user")
+    postHotel["url-input"].append("required name=key")
+    postHotel["url-input"].append("required name=location")
+    postHotel["url-input"].append("required name=rooms")
+    postHotel["url-input"].append("required name=stars")
+    postHotel["url-input"].append("required name=price")
+    postHotel["url-input"].append("required name=name")
+
+    getHotel = defaultdict(list)
+    getHotel["@type"] = "SearchAction"
+    getHotel["target"] = host + "hotel?hotel={hotelid}"
+    getHotel["url-input"].append("required name=hotel")
+
+    getHotels = defaultdict(list)
+    getHotels["@type"] = "SearchAction"
+    getHotels["target"] = host + "hotels?location={locationId}&distance={distanceNumber}"
+    getHotels["url-input"].append("name=location")
+    getHotels["url-input"].append("name=distance")
+
+    updateHotel = defaultdict(list)
+    updateHotel["@type"] = "UpdateAction"
+    updateHotel["target"] = host + "hotels?hotel={hotelId}&user={userId}&key={keyString}&stars={starsNumber}"
+    updateHotel["url-input"].append("required name=hotel")
+    updateHotel["url-input"].append("required name=user")
+    updateHotel["url-input"].append("required name=key")
+    updateHotel["url-input"].append("required name=stars")
+
+    deleteHotel = defaultdict(list)
+    deleteHotel["@type"] = "DeleteAction"
+    deleteHotel["target"] = host + "hotels?hotel={hotelId}&user={userId}&key={keyString}"
+    deleteHotel["url-input"].append("required name=hotel")
+    deleteHotel["url-input"].append("required name=user")
+    deleteHotel["url-input"].append("required name=key")
+
+    hotel["potentialAction"].append(postHotel)
+    hotel["potentialAction"].append(getHotel)
+    hotel["potentialAction"].append(getHotels)
+    hotel["potentialAction"].append(updateHotel)
+    hotel["potentialAction"].append(deleteHotel)
+
+    #Add resource to API
+    response["documentation"]["hasPart"].append(room)
+    response["documentation"]["hasPart"].append(hotel)
+
+
+    return json.dumps(response) ,200, {'ContentType':'application/json'}
+
 #Room is created by the creation of an hotel
 class Room(Resource):
     newid = itertools.count().__next__
@@ -80,8 +158,6 @@ class Room(Resource):
         potentialAction["query"] = self.links['hotel']
         dict["potentialAction"] = potentialAction
 
-
-
         return dict
 
 
@@ -92,6 +168,9 @@ class Room(Resource):
 ############################################## HOTEL ############################################
 #################################################################################################
 ###################################################################https://github.com/Lifree/SS18SWS.git##############################
+
+
+
 
 #Hotels can just be created by an creator
 class Hotel(Resource):
@@ -112,6 +191,8 @@ class Hotel(Resource):
         self.links['hotel'] = host + 'hotel?hotel=' + str(self.id)
         self.links['location'] = host + 'location?hotel=' + str(self.id)
         hotels[self.id] = self #save hotel into dictionary
+
+
 
     #create a new hotel
     @app.route("/hotel",methods=['POST'],endpoint='hotelPost')
@@ -154,6 +235,7 @@ class Hotel(Resource):
             return "location not found", 400
 
         return json.dumps(Hotel(name,int(location),rooms,float(stars),price).__dict__), 200 , {'ContentType':'application/json'}
+
 
 
     #get one hotel by id
