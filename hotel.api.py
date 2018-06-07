@@ -110,12 +110,267 @@ def get():
     hotel["potentialAction"].append(updateHotel)
     hotel["potentialAction"].append(deleteHotel)
 
+    user = defaultdict(list)
+    user["@type"] = "CreativeWork"
+    user["name"] = "user"
+
+    postUser = defaultdict(list)
+    postUser["@type"] = "CreateAction"
+    postUser["target"] = host + "user?firstname={firstName}&lastname={lastName}&email={emailString}&creator={creatorBool}&passkey={keyString}&user={creatorId}&user_key={creatorKeyString}"
+    postUser["url-input"].append("required name=firstname")
+    postUser["url-input"].append("required name=lastname")
+    postUser["url-input"].append("required name=email")
+    postUser["url-input"].append("required name=creator")
+    postUser["url-input"].append("required name=passkey")
+    postUser["url-input"].append("required name=user")
+    postUser["url-input"].append("required name=key")
+
+    deleteUser = defaultdict(list)
+    deleteUser["@type"] = "DeleteAction"
+    deleteUser["target"] = host + "user?user1={creatorId}&user2={userId}&key={creatorKey}"
+    deleteUser["url-input"].append("required name=user1")
+    deleteUser["url-input"].append("required name=user2")
+    deleteUser["url-input"].append("required name=key")
+
+    updateUser = defaultdict(list)
+    updateUser["@type"] = "UpdateAction"
+    updateUser["target"] = host + "user?firstname={firstName}&lastname={lastName}&email={emailString}&creator={creatorBool}&passkey={keyString}&user1={creatorId}&user2={userId}&user_key={creatorKeyString}"
+    updateUser["url-input"].append("required name=firstname")
+    updateUser["url-input"].append("required name=lastname")
+    updateUser["url-input"].append("required name=email")
+    updateUser["url-input"].append("required name=creator")
+    updateUser["url-input"].append("required name=passkey")
+    updateUser["url-input"].append("required name=user1")
+    updateUser["url-input"].append("required name=user2")
+    updateUser["url-input"].append("required name=key")
+
+    user["potentialAction"].append(postUser)
+    user["potentialAction"].append(deleteUser)
+    user["potentialAction"].append(updateUser)
+
+
+    website = defaultdict(list)
+    website["@type"] = "CreativeWork"
+    website["name"] = "Website"
+
+    updateWebsite = defaultdict(list)
+    updateWebsite["@type"] = "UpdateAction"
+    updateWebsite["target"] = host + "website?hotel={hotelId}&website={websiteId}&url={URL}&user={creatorId}&key={creatorKey}"
+    updateWebsite["url-input"].append("required name=hotel")
+    updateWebsite["url-input"].append("required name=website")
+    updateWebsite["url-input"].append("required name=url")
+    updateWebsite["url-input"].append("required name=user")
+    updateWebsite["url-input"].append("required name=key")
+
+    deleteWebsite = defaultdict(list)
+    deleteWebsite["@type"] = "DeleteAction"
+    deleteWebsite["target"] = host + "website?hotel={hotelId}&website={websiteId}&user={creatorId}&key={creatorKey}"
+    updateWebsite["url-input"].append("required name=hotel")
+    updateWebsite["url-input"].append("required name=website")
+    updateWebsite["url-input"].append("required name=user")
+    updateWebsite["url-input"].append("required name=key")
+
+    createWebsite = defaultdict(list)
+    createWebsite["@type"] = "CreateAction"
+    createWebsite["target"] = host + "website?hotel={hotelId}&url={URL}&user={creatorId}&key={creatorKey}"
+    createWebsite["url-input"].append("required name=hotel")
+    createWebsite["url-input"].append("required name=url")
+    createWebsite["url-input"].append("required name=user")
+    createWebsite["url-input"].append("required name=key")
+
+    searchWebsite = defaultdict(list)
+    searchWebsite["@type"] = "SearchAction"
+    searchWebsite["target"] = host + "websites?hotel={hotelId}"
+    searchWebsite["url-input"].append("name=hotel")
+
+    website["potentialAction"].append(updateWebsite)
+    website["potentialAction"].append(deleteWebsite)
+    website["potentialAction"].append(createWebsite)
+    website["potentialAction"].append(searchWebsite)
+
+    location = defaultdict(list)
+    location["@type"] = "CreativeWork"
+    location["name"] = "Location"
+
+    createLocation = defaultdict(list)
+    createLocation["@type"] = "CreateAction"
+    createLocation["target"] = host + "location?location={locationName}&lat={latitude}&lon={longitude}&country={countryString}"
+    createLocation["url-input"].append("required name=location")
+    createLocation["url-input"].append("required name=lat")
+    createLocation["url-input"].append("required name=lon")
+    createLocation["url-input"].append("required name=country")
+
+    searchLocations = defaultdict(list)
+    searchLocations["@type"] = "SearchAction"
+    searchLocations["target"] = host + "locations"
+
+    searchLocation = defaultdict(list)
+    searchLocation["@type"] = "SearchAction"
+    searchLocation["target"] = host + "location?hotel={hotelId}"
+    searchLocation["url-input"].append("required name=hotel")
+
+    deleteLocation = defaultdict(list)
+    deleteLocation["@type"] = "DeleteAction"
+    deleteLocation["target"] = host + "location?location={locationId}"
+    deleteLocation["url-input"].append("required name=location")
+
+    location["potentialAction"].append(createLocation)
+    location["potentialAction"].append(searchLocations)
+    location["potentialAction"].append(searchLocation)
+    location["potentialAction"].append(deleteLocation)
+
+    review = defaultdict(list)
+    review["@type"] = "CreativeWork"
+    review["name"] = "Review"
+
+    createReview = defaultdict(list)
+    createReview["@type"] = "CreateAction"
+    createReview["target"] = host + "review?hotel={hotelId}&msg={msgString}&user={creatorId}&key={keyString}"
+    createReview["url-input"].append("required name=hotel")
+    createReview["url-input"].append("required name=msg")
+    createReview["url-input"].append("required name=user")
+    createReview["url-input"].append("required name=key")
+
+    searchReview = defaultdict(list)
+    searchReview["@type"] = "SearchAction"
+    searchReview["target"] = host + "reviews?hotel={hotelId}"
+    searchReview["url-input"].append("name=hotel")
+
+    review["potentialAction"].append(createReview)
+    review["potentialAction"].append(searchReview)
+
+    bookmark = defaultdict(list)
+    bookmark["@type"] = "CreativeWork"
+    bookmark["name"] = "Bookmark"
+
+    createBookmark = defaultdict(list)
+    createBookmark["@type"] = "CreateAction"
+    createBookmark["target"] = host + "bookmark?hotel={hotelId}&user={creatorId}&key={keyString}"
+    createBookmark["url-input"].append("required name=hotel")
+    createBookmark["url-input"].append("required name=user")
+    createBookmark["url-input"].append("required name=key")
+
+    searchBookmark = defaultdict(list)
+    searchBookmark["@type"] = "SearchAction"
+    searchBookmark["target"] = host + "bookmarks?user={creatorId}&key={keyString}"
+    searchBookmark["url-input"].append("required name=user")
+    searchBookmark["url-input"].append("required name=key")
+
+    deleteBookmark = defaultdict(list)
+    deleteBookmark["@type"] = "DeleteAction"
+    deleteBookmark["target"] = host + "bookmark?bookmark={bookmarkId}&user={creatorId}&key={keyString}"
+    deleteBookmark["url-input"].append("required name=bookmark")
+    deleteBookmark["url-input"].append("required name=user")
+    deleteBookmark["url-input"].append("required name=key")
+
+    bookmark["potentialAction"].append(createBookmark)
+    bookmark["potentialAction"].append(searchBookmark)
+    bookmark["potentialAction"].append(deleteBookmark)
+
+
+    reservation = defaultdict(list)
+    reservation["@type"] = "CreativeWork"
+    reservation["name"] = "Reservation"
+
+    createReservation = defaultdict(list)
+    createReservation["@type"] = "CreateAction"
+    createReservation["target"] = host + "reservation?hotel={hotelId}&user={creatorId}&key={keyString}&room={roomId}&start={startDate}&end={endDate}"
+    createReservation["url-input"].append("required name=hotel")
+    createReservation["url-input"].append("required name=user")
+    createReservation["url-input"].append("required name=key")
+    createReservation["url-input"].append("required name=room")
+    createReservation["url-input"].append("required name=start")
+    createReservation["url-input"].append("required name=end")
+
+    searchReservations = defaultdict(list)
+    searchReservations["@type"] = "SearchAction"
+    searchReservations["target"] = host + "reservations?room={roomId}"
+    searchReservations["url-input"].append("required name=room")
+
+    deleteReservation = defaultdict(list)
+    deleteReservation["@type"] = "DeleteAction"
+    deleteReservation["target"] = host + "reservation?room={roomId}&reservation={reservationId}&user={creatorId}&key={keyString}"
+    deleteReservation["url-input"].append("required name=room")
+    deleteReservation["url-input"].append("required name=reservation")
+    deleteReservation["url-input"].append("required name=user")
+    deleteReservation["url-input"].append("required name=key")
+
+    reservation["potentialAction"].append(createReservation)
+    reservation["potentialAction"].append(searchReservations)
+    reservation["potentialAction"].append(deleteReservation)
+
+    booking = defaultdict(list)
+    booking["@type"] = "CreativeWork"
+    booking["name"] = "Booking"
+
+    createBooking = defaultdict(list)
+    createBooking["@type"] = "CreateAction"
+    createBooking["target"] = host + "booking?hotel={hotelId}&user={creatorId}&key={keyString}&room={roomId}&start={startDate}&end={endDate}"
+    createBooking["url-input"].append("required name=hotel")
+    createBooking["url-input"].append("required name=user")
+    createBooking["url-input"].append("required name=key")
+    createBooking["url-input"].append("required name=room")
+    createBooking["url-input"].append("required name=start")
+    createBooking["url-input"].append("required name=end")
+
+    searchBookings = defaultdict(list)
+    searchBookings["@type"] = "SearchAction"
+    searchBookings["target"] = host + "bookings?room={userId}"
+    searchBookings["url-input"].append("name=user")
+
+    deleteBooking = defaultdict(list)
+    deleteBooking["@type"] = "DeleteAction"
+    deleteBooking["target"] = host + "reservation?booker={bookerId}&booking={bookingId}&user={creatorId}&key={keyString}"
+    deleteBooking["url-input"].append("required name=booker")
+    deleteBooking["url-input"].append("required name=booking")
+    deleteBooking["url-input"].append("required name=user")
+    deleteBooking["url-input"].append("required name=key")
+
+    booking["potentialAction"].append(createBooking)
+    booking["potentialAction"].append(searchBookings)
+    booking["potentialAction"].append(deleteBooking)
+
+
+    offer = defaultdict(list)
+    offer["@type"] = "CreativeWork"
+    offer["name"] = "Offer"
+
+    searchOffer = defaultdict(list)
+    searchOffer["@type"] = "SearchAction"
+    searchOffer["target"] = host + "offer?hotel={hotelId}&room={roomId}&start={startDate}&end={endDate}"
+    searchOffer["url-input"].append("required name=hotel")
+    searchOffer["url-input"].append("required name=room")
+    searchOffer["url-input"].append("required name=start")
+    searchOffer["url-input"].append("required name=end")
+
+    offer["potentialAction"].append(searchOffer)
+
+
+
+
     #Add resource to API
     response["documentation"]["hasPart"].append(room)
     response["documentation"]["hasPart"].append(hotel)
+    response["documentation"]["hasPart"].append(user)
+    response["documentation"]["hasPart"].append(website)
+    response["documentation"]["hasPart"].append(location)
+    response["documentation"]["hasPart"].append(review)
+    response["documentation"]["hasPart"].append(bookmark)
+    response["documentation"]["hasPart"].append(reservation)
+    response["documentation"]["hasPart"].append(booking)
+    response["documentation"]["hasPart"].append(offer)
+
 
 
     return json.dumps(response) ,200, {'ContentType':'application/json'}
+
+
+#############################
+#############################
+########## REAL API #########
+#############################
+#############################
+
 
 #Room is created by the creation of an hotel
 class Room(Resource):
@@ -455,7 +710,7 @@ class User(Resource):
 
         #check args
         if(user2 == None or not user2.isdigit()):
-            return "no user to delete given", 400
+            return "no user to update given", 400
 
         if(is_creator == "True" or is_creator == "1"):
             is_creator = True
@@ -706,14 +961,14 @@ class Location(Resource):
 
 
     #tested
-    @app.route("/location",methods=['GET'],endpoint='locationǴet')
+    @app.route("/location",methods=['GET'],endpoint='locationGet')
     def get():
         hotel_id = request.args.get('hotel')
         if(hotel_id == None or not hotel_id.isdigit()):
             return "hotel is invalide", 400
         hotel = hotels.get(int(hotel_id))
         if(hotel == None):
-            return "htel not found", 400
+            return "hotel not found", 400
         location = locations.get(hotel.location)
         if(location == None):
             abort(404)
