@@ -971,6 +971,7 @@ class Website(Resource):
         dict["@context"] = "http://schema.org"
         dict["@type"] = "WebSite"
         dict["url"] = self.url
+        dict["@type"] = "Hotel"
         dict["identifier"] = self.hotel
         dict["email"] = self.email
 
