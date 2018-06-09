@@ -396,10 +396,10 @@ class Room(Resource):
         return response ,200, {'ContentType':'application/json'}
 
     def dict(self):
-        dict = defaultdict(list);
+        dict = defaultdict(list)
         dict["@context"] = "http://schema.org"
         dict["@type"] = "HotelRoom"
-        dict["name"] = self.number;
+        dict["name"] = self.number
 
         additionalProperty = {}
         additionalProperty["@type"] = "PropertyValue"
@@ -426,8 +426,6 @@ class Room(Resource):
 ###################################################################https://github.com/Lifree/SS18SWS.git##############################
 
 
-
-
 #Hotels can just be created by an creator
 class Hotel(Resource):
     newid = itertools.count().__next__
@@ -447,7 +445,6 @@ class Hotel(Resource):
         self.links['hotel'] = host + 'hotel?hotel=' + str(self.id)
         self.links['location'] = host + 'location?hotel=' + str(self.id)
         hotels[self.id] = self #save hotel into dictionary
-
 
 
     #create a new hotel
@@ -604,6 +601,51 @@ class Hotel(Resource):
             del reviews[int(hotel_id)]
         return json.dumps(hotel.__dict__), 204,{'ContentType':'application/json'}
 
+    def dict(self):
+        dict = defaultdict(list)
+        dict["@context"] = "http://schema.org"
+        dict["@type"] = "Hotel"
+        dict["name"] = self.name
+        dict["location"] = self.location
+        dict["starRating"] = self.stars
+
+        getRooms = {}
+        getRooms["@type"] = "SearchAction"
+        getRooms["name"] = "rooms"
+        getRooms["query"] = self.links['rooms']
+        dict["potentialAction"].append(getRooms)
+
+        getReviews = {}
+        getReviews["@type"] = "SearchAction"
+        getReviews["name"] = "reviews"
+        getReviews["query"] = self.links['reviews']
+        dict["potentialAction"].append(getReviews)
+
+        getReservations = {}
+        getReservations["@type"] = "SearchAction"
+        getReservations["name"] = "reservations"
+        getReservations["query"] = self.links['reservations']
+        dict["potentialAction"].append(getReservations)
+
+        getWebsites= {}
+        getWebsites["@type"] = "SearchAction"
+        getWebsites["name"] = "websites"
+        getWebsites["query"] = self.links['websites']
+        dict["potentialAction"].append(getWebsites)
+
+        getHotel= {}
+        getHotel["@type"] = "SearchAction"
+        getHotel["name"] = "hotel"
+        getHotel["query"] = self.links['hotel']
+        dict["potentialAction"].append(getHotel)
+
+        getLocation= {}
+        getLocation["@type"] = "SearchAction"
+        getLocation["name"] = "location"
+        getLocation["query"] = self.links['location']
+        dict["potentialAction"].append(getLocation)
+        return dict
+
 
 #################################################################################################
 #################################################################################################
@@ -743,6 +785,39 @@ class User(Resource):
 
         return json.dumps(user.__dict__), 200,{'ContentType':'application/json'}
 
+    def dict(self):
+        dict = defaultdict(list)
+        dict["@context"] = "http://schema.org"
+        dict["@type"] = "Person"
+        dict["familyName"] = self.lastname
+        dict["givenName"] = self.firstname
+        dict["email"] = self.email
+
+        additionalProperty = {}
+        additionalProperty["@type"] = "PropertyValue"
+        additionalProperty["name"] = "passkey"
+        additionalProperty["value"] = self.passkey
+        dict["additionalProperty"] = additionalProperty
+
+        additionalProperty2 = {}
+        additionalProperty2["@type"] = "PropertyValue"
+        additionalProperty2["name"] = "is_creator"
+        additionalProperty2["value"] = self.is_creator
+        dict["additionalProperty2"] = additionalProperty2
+
+        getBookmarks= {}
+        getBookmarks["@type"] = "SearchAction"
+        getBookmarks["name"] = "bookmarks"
+        getBookmarks["query"] = self.links['bookmarks']
+        dict["potentialAction"].append(getBookmarks)
+
+        getBookings= {}
+        getBookings["@type"] = "SearchAction"
+        getBookings["name"] = "bookings"
+        getBookings["query"] = self.links['bookings']
+        dict["potentialAction"].append(getBookings)
+
+        return dict
 
 #################################################################################################
 #################################################################################################
@@ -891,6 +966,27 @@ class Website(Resource):
             abort(404)
         return json.dumps([ob.__dict__ for ob in hotelSites]), 200,{'ContentType':'application/json'}
 
+    def dict(self):
+        dict = defaultdict(list)
+        dict["@context"] = "http://schema.org"
+        dict["@type"] = "WebSite"
+        dict["url"] = self.url
+        dict["identifier"] = self.hotel
+        dict["email"] = self.email
+
+        getHotel= {}
+        getHotel["@type"] = "SearchAction"
+        getHotel["name"] = "hotel"
+        getHotel["query"] = self.links['hotel']
+        dict["potentialAction"].append(getHotel)
+
+        getHotelWebsites= {}
+        getHotelWebsites["@type"] = "SearchAction"
+        getHotelWebsites["name"] = "hotelWebsites"
+        getHotelWebsites["query"] = self.links['hotelWebsites']
+        dict["potentialAction"].append(getHotelWebsites)
+
+        return dict
 
 #################################################################################################
 #################################################################################################
@@ -991,6 +1087,23 @@ class Location(Resource):
         del locations[int(location_id)]
         return json.dumps(location.__dict__), 204,{'ContentType':'application/json'}
 
+    def dict(self):
+        dict = defaultdict(list)
+        dict["@context"] = "http://schema.org"
+        dict["@type"] = "Place"
+        dict["location"] = self.location
+        dict["@type"] = "GeoCoordinates"
+        dict["longitude"] = self.long
+        dict["latitude"] = self.lat
+        dict["addressCountry"] = self.country
+
+        getHotels= {}
+        getHotels["@type"] = "SearchAction"
+        getHotels["name"] = "hotels"
+        getHotels["query"] = self.links['hotels']
+        dict["potentialAction"].append(getHotels)
+
+        return dict
 
 #################################################################################################
 #################################################################################################
@@ -1050,6 +1163,26 @@ class Review(Resource):
             abort(404)
         return json.dumps([ob.__dict__ for ob in hotelReviews]),200,{'ContentType':'application/json'}
 
+    def dict(self):
+        dict = defaultdict(list)
+        dict["@context"] = "http://schema.org"
+        dict["@type"] = "Review"
+        dict["itemReviewed"] = self.hotel
+        dict["author"] = self.user
+        dict["reviewBody"] = self.msg
+
+        getHotelReviews= {}
+        getHotelReviews["@type"] = "SearchAction"
+        getHotelReviews["name"] = "hotelReviews"
+        getHotelReviews["query"] = self.links['hotelReviews']
+        dict["potentialAction"].append(getHotelReviews)
+
+        getReviewHotel= {}
+        getReviewHotel["@type"] = "SearchAction"
+        getReviewHotel["name"] = "reviewHotel"
+        getReviewHotel["query"] = self.links['reviewHotel']
+        dict["potentialAction"].append(getReviewHotel)
+        return dict
 
 
 #################################################################################################
@@ -1140,6 +1273,21 @@ class Bookmark(Resource):
             i += 1
         abort(404)
 
+    def dict(self):
+        dict = defaultdict(list)
+        dict["@context"] = "http://schema.org"
+        dict["@type"] = "Thing"
+        dict["@type"] = "Person"
+        dict["identifier"] = self.user
+        dict["@type"] = "Hotel"
+        dict["identifier"] = self.hotel
+
+        getUserBookmarks= {}
+        getUserBookmarks["@type"] = "SearchAction"
+        getUserBookmarks["name"] = "userBookmarks"
+        getUserBookmarks["query"] = self.links['userBookmarks']
+        dict["potentialAction"].append(getUserBookmarks)
+        return dict
 
 #################################################################################################
 #################################################################################################
@@ -1251,6 +1399,23 @@ class Reservation(Resource):
             i += 1
         abort(404)
 
+#booking is the ACTUAL schema.org reservation -> I now used it for both, i might have to change our reservation
+    def dict(self):
+        dict = defaultdict(list)
+        dict["@context"] = "http://schema.org"
+        dict["@type"] = "LodgingReservation"
+        dict["underName"] = self.user
+        dict["@type"] = "Hotel"
+        dict["identifier"] = self.hotel
+        dict["checkinTime"] = self.start_date
+        dict["checkoutTime"] = self.end_date
+
+        getRoomReservations= {}
+        getRoomReservations["@type"] = "SearchAction"
+        getRoomReservations["name"] = "roomReservations"
+        getRoomReservations["query"] = self.links['roomReservations']
+        dict["potentialAction"].append(getRoomReservations)
+        return dict
 
 #################################################################################################
 #################################################################################################
@@ -1362,6 +1527,18 @@ class Booking(Resource):
             i += 1
         abort(404)
 
+    def dict(self):
+        dict = defaultdict(list)
+        dict["@context"] = "http://schema.org"
+        dict["@type"] = "LodgingReservation"
+        dict["underName"] = self.user
+        dict["checkinTime"] = self.start_date
+        dict["checkoutTime"] = self.end_date
+        dict["@type"] = "HotelRoom"
+        dict["identifier"] = self.room
+        return dict
+
+
 #################################################################################################
 #################################################################################################
 #################################################################################################
@@ -1408,6 +1585,18 @@ class Offer(Resource):
                 return json.dumps(Offer(room_id, hotel_id, start, end, ob.price).__dict__),200,{'ContentType':'application/json'}
         abort(404)
 
+    def dict(self):
+        dict = defaultdict(list)
+        dict["@context"] = "http://schema.org"
+        dict["@type"] = "Offer"
+        dict["availabilityStarts"] = self.start_date
+        dict["availabilityEnds"] = self.end_date
+        dict["@type"] = "Hotel"
+        dict["identifier"] = self.hotel
+        dict["@type"] = "HotelRoom"
+        dict["identifier"] = self.hotel
+
+        return dict
 
 
 
