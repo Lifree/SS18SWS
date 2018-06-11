@@ -362,7 +362,7 @@ def get():
 
 
 
-    return json.dumps(response) ,200, {'ContentType':'application/json'}
+    return json.dumps(response) ,200, {'content-type':'application/json'}
 
 
 #############################
@@ -389,11 +389,11 @@ class Room(Resource):
     def get():
         hotel_id = request.args.get('hotel')
         if(hotel_id == None or not hotel_id.isdigit()):         #checks if parameter hotel was given and of correct type
-            return json.dumps([[ob.dict() for ob in rooms[x]] for x in rooms],ensure_ascii=False) ,200, {'ContentType':'application/json'} #if not -> return all rooms
+            return json.dumps([[ob.dict() for ob in rooms[x]] for x in rooms],ensure_ascii=False) ,200, {'content-type':'application/json'} #if not -> return all rooms
         if(hotels.get(int(hotel_id)) == None):                  #if hotel was given but it has no rooms
             abort(404)
         response = json.dumps([ob.dict() for ob in rooms[int(hotel_id)]],ensure_ascii=False) #return rooms of one hotel
-        return response ,200, {'ContentType':'application/json'}
+        return response ,200, {'content-type':'application/json'}
 
     def dict(self):
         dict = defaultdict(list)
@@ -487,7 +487,7 @@ class Hotel(Resource):
         if(locations.get(int(location))==None):
             return "location not found", 400
 
-        return json.dumps(Hotel(name,int(location),rooms,float(stars),price).__dict__), 200 , {'ContentType':'application/json'}
+        return json.dumps(Hotel(name,int(location),rooms,float(stars),price).__dict__), 200 , {'content-type':'application/json'}
 
 
 
@@ -504,7 +504,7 @@ class Hotel(Resource):
         #check if hotel exsists
         if(hotel == None):
             return "no hotel found", 404
-        return json.dumps(hotel.__dict__), 200 ,{'ContentType':'application/json'}
+        return json.dumps(hotel.__dict__), 200 ,{'content-type':'application/json'}
 
 
     #get all hotels or just hotels in a radius
@@ -515,7 +515,7 @@ class Hotel(Resource):
         #check argumnets
         if(location == None or not location.isdigit() or
             distance == None or not distance.isdigit()):
-            return json.dumps([ob.__dict__ for key, ob in hotels.items()],ensure_ascii=False) , 200 ,{'ContentType':'application/json'} # return all hotels if no location and distance are given
+            return json.dumps([ob.__dict__ for key, ob in hotels.items()],ensure_ascii=False) , 200 ,{'content-type':'application/json'} # return all hotels if no location and distance are given
 
         response = []
 
@@ -532,7 +532,7 @@ class Hotel(Resource):
         if(len(response) == 0):
             abort(404)
 
-        return json.dumps([ob.__dict__ for ob in response]), 200,{'ContentType':'application/json'}
+        return json.dumps([ob.__dict__ for ob in response]), 200,{'content-type':'application/json'}
 
 
     #update stars of hotel
@@ -563,7 +563,7 @@ class Hotel(Resource):
         if(hotel == None):
             return "no hotel found", 400
         hotel.stars = float(stars)
-        return json.dumps(hotel.__dict__), 201,{'ContentType':'application/json'}
+        return json.dumps(hotel.__dict__), 201,{'content-type':'application/json'}
 
 
     #delete a hotel
@@ -599,7 +599,7 @@ class Hotel(Resource):
             del rooms[int(hotel_id)]
         if(reviews.get(int(hotel_id)) != None):
             del reviews[int(hotel_id)]
-        return json.dumps(hotel.__dict__), 204,{'ContentType':'application/json'}
+        return json.dumps(hotel.__dict__), 204,{'content-type':'application/json'}
 
     def dict(self):
         dict = defaultdict(list)
@@ -704,7 +704,7 @@ class User(Resource):
         if(curr_user == None or curr_user.passkey != user_key or curr_user.is_creator != True):
             'pass doesnt match or no rights', 403
 
-        return json.dumps(User(firstname,lastname,email,is_creator,passkey).__dict__), 201 ,{'ContentType':'application/json'}
+        return json.dumps(User(firstname,lastname,email,is_creator,passkey).__dict__), 201 ,{'content-type':'application/json'}
 
     #delete user by id
     @app.route("/user",methods=['DELETE'],endpoint='userDelete')
@@ -732,7 +732,7 @@ class User(Resource):
         if(user == None):
             return "no user2 found", 400
         del users[int(user2)]
-        return json.dumps(user.__dict__), 201,{'ContentType':'application/json'}
+        return json.dumps(user.__dict__), 201,{'content-type':'application/json'}
 
     #update user for all args
     @app.route("/user",methods=['PUT'],endpoint='userUpdate')
@@ -783,7 +783,7 @@ class User(Resource):
         if(passkey != None):
             user.passkey = passkey
 
-        return json.dumps(user.__dict__), 200,{'ContentType':'application/json'}
+        return json.dumps(user.__dict__), 200,{'content-type':'application/json'}
 
     def dict(self):
         dict = defaultdict(list)
@@ -877,7 +877,7 @@ class Website(Resource):
         for website in hotelSites:
             if(website.id == int(website_id)):
                 website.url = url;
-                return json.dumps(website.__dict__), 200,{'ContentType':'application/json'}
+                return json.dumps(website.__dict__), 200,{'content-type':'application/json'}
         abort(404)
 
 
@@ -898,7 +898,7 @@ class Website(Resource):
         if( hotel_id == None or not hotel_id.isdigit() or
             website_id == None or not website_id.isdigit() or
             url == None):
-            return "invalid hotel_id, website_id or url", 400,{'ContentType':'application/json'}
+            return "invalid hotel_id, website_id or url", 400,{'content-type':'application/json'}
 
         #check user rights
         curr_user = users.get(int(user))
@@ -915,7 +915,7 @@ class Website(Resource):
                     del websites[int(hotel_id)]
                 else:
                     del websites[int(hotel_id)][i]
-                return json.dumps(website.__dict__), 204,{'ContentType':'application/json'}
+                return json.dumps(website.__dict__), 204,{'content-type':'application/json'}
             i += 1
         abort(404)
 
@@ -952,19 +952,19 @@ class Website(Resource):
         hotel = hotels.get(int(hotel_id))
         if(hotel == None):
             return "hotel id ivalide", 400
-        return json.dumps(Website(hotel.id,url).__dict__), 201,{'ContentType':'application/json'}
+        return json.dumps(Website(hotel.id,url).__dict__), 201,{'content-type':'application/json'}
 
     #get list of websites (of a hotel)
     @app.route("/websites",methods=['GET'],endpoint='website/listGet')
     def create():
         hotel_id = request.args.get('hotel')
         if(hotel_id == None or not hotel_id.isdigit()):
-            return json.dumps([[ob.__dict__ for ob in websites[x]] for x in websites]), 200,{'ContentType':'application/json'}
+            return json.dumps([[ob.__dict__ for ob in websites[x]] for x in websites]), 200,{'content-type':'application/json'}
 
         hotelSites = websites.get(int(hotel_id))
         if(hotelSites == None):
             abort(404)
-        return json.dumps([ob.__dict__ for ob in hotelSites]), 200,{'ContentType':'application/json'}
+        return json.dumps([ob.__dict__ for ob in hotelSites]), 200,{'content-type':'application/json'}
 
     def dict(self):
         dict = defaultdict(list)
@@ -1054,7 +1054,7 @@ class Location(Resource):
         if(countryName == None):
             return "Country is invalide", 400
 
-        return json.dumps(Location(location,int(lat),int(lon),countryName).__dict__), 201,{'ContentType':'application/json'}
+        return json.dumps(Location(location,int(lat),int(lon),countryName).__dict__), 201,{'content-type':'application/json'}
 
 
     #tested
@@ -1069,12 +1069,12 @@ class Location(Resource):
         location = locations.get(hotel.location)
         if(location == None):
             abort(404)
-        return json.dumps(location.__dict__), 200,{'ContentType':'application/json'}
+        return json.dumps(location.__dict__), 200,{'content-type':'application/json'}
 
     #return all locations
     @app.route("/locations",methods=['GET'],endpoint='location/listǴet')
     def getList():
-        return json.dumps( [location.__dict__ for key, location in locations.items()]), 200,{'ContentType':'application/json'}
+        return json.dumps( [location.__dict__ for key, location in locations.items()]), 200,{'content-type':'application/json'}
 
     #delete location
     @app.route("/location",methods=['DELETE'],endpoint='locationDelete')
@@ -1086,7 +1086,7 @@ class Location(Resource):
         if(location==None):
             abort(404)
         del locations[int(location_id)]
-        return json.dumps(location.__dict__), 204,{'ContentType':'application/json'}
+        return json.dumps(location.__dict__), 204,{'content-type':'application/json'}
 
     def dict(self):
         dict = defaultdict(list)
@@ -1150,7 +1150,7 @@ class Review(Resource):
         if(curr_user == None or curr_user.passkey != user_key):
             'pass doesnt match or no rights', 403
 
-        return json.dumps(Review(int(hotel_id),int(user),msg).__dict__),201,{'ContentType':'application/json'}
+        return json.dumps(Review(int(hotel_id),int(user),msg).__dict__),201,{'content-type':'application/json'}
 
 
     #get reviews (by hotel_id)
@@ -1158,11 +1158,11 @@ class Review(Resource):
     def get():
         hotel_id = request.args.get('hotel')
         if(hotel_id == None or not hotel_id.isdigit()):
-            return json.dumps([[ob.__dict__ for ob in reviews[x]] for x in reviews]), 200,{'ContentType':'application/json'}
+            return json.dumps([[ob.__dict__ for ob in reviews[x]] for x in reviews]), 200,{'content-type':'application/json'}
         hotelReviews = reviews.get(int(hotel_id))
         if(hotelReviews == None):
             abort(404)
-        return json.dumps([ob.__dict__ for ob in hotelReviews]),200,{'ContentType':'application/json'}
+        return json.dumps([ob.__dict__ for ob in hotelReviews]),200,{'content-type':'application/json'}
 
     def dict(self):
         dict = defaultdict(list)
@@ -1224,7 +1224,7 @@ class Bookmark(Resource):
         curr_user = users.get(int(user))
         if(curr_user == None or curr_user.passkey != user_key):
             'pass doesnt match or no rights', 403
-        return json.dumps(Bookmark(int(hotel_id),int(user), key).__dict__), 201,{'ContentType':'application/json'}
+        return json.dumps(Bookmark(int(hotel_id),int(user), key).__dict__), 201,{'content-type':'application/json'}
 
 
     # return the bookmarks of an user
@@ -1241,7 +1241,7 @@ class Bookmark(Resource):
         userBookmarks = bookmarks.get(int(user))
         if(userBookmarks == None):
             abort(404)
-        return json.dumps([ob.__dict__ for ob in userBookmarks]), 200,{'ContentType':'application/json'}
+        return json.dumps([ob.__dict__ for ob in userBookmarks]), 200,{'content-type':'application/json'}
 
 
     #delete bookmark
@@ -1270,7 +1270,7 @@ class Bookmark(Resource):
                     del bookmarks[int(user)]
                 else:
                     del bookmarks[int(user)][i]
-                return json.dumps(ob.__dict__), 204,{'ContentType':'application/json'}
+                return json.dumps(ob.__dict__), 204,{'content-type':'application/json'}
             i += 1
         abort(404)
 
@@ -1345,13 +1345,13 @@ class Reservation(Resource):
             if(ob.id == int(room_id)):
                 roomReservations = reservations.get(int(room_id))
                 if(roomReservations == None):
-                    return json.dumps(Reservation(int(room_id),int(user),start,end).__dict__), 201,{'ContentType':'application/json'}
+                    return json.dumps(Reservation(int(room_id),int(user),start,end).__dict__), 201,{'content-type':'application/json'}
                 else:
                     for res in roomReservations:
                         if ((res.start_date <= start and res.end_date >= start) or
                             (res.start_date <= end and res.end_date >= end)):
                             return "there is another reservation in this time", 400
-                    return json.dumps(Reservation(int(room_id),int(user),start,end).__dict__), 201,{'ContentType':'application/json'}
+                    return json.dumps(Reservation(int(room_id),int(user),start,end).__dict__), 201,{'content-type':'application/json'}
         abort(404)
 
     #get reservations (of a room)
@@ -1359,11 +1359,11 @@ class Reservation(Resource):
     def get():
         room_id = request.args.get('room')
         if(room_id == None or not room_id.isdigit()):
-            json.dumps([[ob.__dict__ for ob in reservations[x]] for x in reservations]), 200,{'ContentType':'application/json'}
+            json.dumps([[ob.__dict__ for ob in reservations[x]] for x in reservations]), 200,{'content-type':'application/json'}
         roomReservations = reservations.get(int(room_id))
         if(roomReservations == None):
             abort(404)
-        return json.dumps([ob.__dict__ for ob in roomReservations]), 200,{'ContentType':'application/json'}
+        return json.dumps([ob.__dict__ for ob in roomReservations]), 200,{'content-type':'application/json'}
 
 
     #delete reservation
@@ -1396,7 +1396,7 @@ class Reservation(Resource):
                     del reservations[int(room_id)]
                 else:
                     del reservations[int(room_id)][i]
-                return json.dumps(ob.__dict__), 204,{'ContentType':'application/json'}
+                return json.dumps(ob.__dict__), 204,{'content-type':'application/json'}
             i += 1
         abort(404)
 
@@ -1475,7 +1475,7 @@ class Booking(Resource):
                 roomReservations = reservations.get(int(room_id))
                 if(roomReservations == None):
                     Reservation(int(room_id),int(user),start,end)
-                    return json.dumps(Booking(int(room_id),int(user),start,end).__dict__), 201,{'ContentType':'application/json'}
+                    return json.dumps(Booking(int(room_id),int(user),start,end).__dict__), 201,{'content-type':'application/json'}
                 else:
                     for res in roomReservations:
                         if ((res.start_date <= start and res.end_date >= start) or
@@ -1483,7 +1483,7 @@ class Booking(Resource):
                             print(res.__dict__)
                             abort(404)
                     Reservation(int(room_id),int(user),start,end)
-                    return json.dumps(Booking(int(room_id),int(user),start,end).__dict__), 201,{'ContentType':'application/json'}
+                    return json.dumps(Booking(int(room_id),int(user),start,end).__dict__), 201,{'content-type':'application/json'}
         abort(404)
 
     #get bookings (of user)
@@ -1491,11 +1491,11 @@ class Booking(Resource):
     def get():
         user = request.args.get('user')
         if(user == None or not user.isdigit()):
-            json.dumps([[ob.__dict__ for ob in bookings[x]] for x in bookings]), 200,{'ContentType':'application/json'}
+            json.dumps([[ob.__dict__ for ob in bookings[x]] for x in bookings]), 200,{'content-type':'application/json'}
         userBookings = bookings.get(int(user))
         if(userBookings == None):
             abort(404)
-        return json.dumps([ob.__dict__ for ob in userBookings]), 200,{'ContentType':'application/json'}
+        return json.dumps([ob.__dict__ for ob in userBookings]), 200,{'content-type':'application/json'}
 
 
     #delete the booking -> just creator
@@ -1524,7 +1524,7 @@ class Booking(Resource):
                     del bookings[int(user1)]
                 else:
                     del bookings[int(user1)][i]
-                return json.dumps(ob.__dict__), 204,{'ContentType':'application/json'}
+                return json.dumps(ob.__dict__), 204,{'content-type':'application/json'}
             i += 1
         abort(404)
 
@@ -1583,7 +1583,7 @@ class Offer(Resource):
             return "no hotelrooms found", 400
         for ob in hotelRooms:
             if(int(room_id) == ob.id):
-                return json.dumps(Offer(room_id, hotel_id, start, end, ob.price).__dict__),200,{'ContentType':'application/json'}
+                return json.dumps(Offer(room_id, hotel_id, start, end, ob.price).__dict__),200,{'content-type':'application/json'}
         abort(404)
 
     def dict(self):
